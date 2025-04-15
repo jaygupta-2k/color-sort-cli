@@ -28,6 +28,7 @@ def main():
         new = True
         stack_list = initialize_game()
         original_stack_list = [stack.copy() for stack in stack_list]
+        previous_command = None
 
         while True:
             show_stacks(stack_list)
@@ -59,7 +60,7 @@ def main():
                 print("\n> Game reset!")
                 print(f"> {prompts(context='restart')}\n")
             elif command == HINT_COMMAND:
-                hint = provide_hint(stack_list)
+                hint = provide_hint(stack_list, previous_command)
                 print(hint)
             elif command == NEW_COMMAND:
                 new = True
@@ -77,12 +78,14 @@ def main():
             else:
                 try:
                     source, destination = parse_move(command)
-                    if process_move(stack_list[source], stack_list[destination]):
+                    previous_command = (source, destination)
+                    if process_move(stack_list, source, destination):
                         print(f"\n> Moved from stack {source + 1} to stack {destination + 1}.\n")
                     else:
                         print(f"\n> Invalid move. Please try again.\n> {prompts(context='error')}\n")
                 except Exception:
-                    print(f"\n> Invalid input. Please use the right format or a valid command.\n> {prompts(context='error')}\n")
+                    print(f"\n> Invalid input. Please use the right format or a valid command.\n> "
+                          f"{prompts(context='error')}\n")
 
     finally:
         # Restore the main screen buffer

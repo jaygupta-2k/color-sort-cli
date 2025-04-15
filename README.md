@@ -39,7 +39,7 @@ Recreating the classic color sort game in Python.
    color-sort
    ```
 ## To-do
-- Write an algorithm to solve the game.
-- Improve hints function logic.
-- Allow users to configure stack sizes or themes via CLI flags or config files.
-- Add scroll to the game screen, preferably using mouse.
+- [ ] Write an algorithm to solve the game.
+- [X] Improve hints function logic.
+- [ ] Allow users to configure stack sizes or themes via CLI flags or config files.
+- [ ] Add scroll to the game screen, preferably using mouse.

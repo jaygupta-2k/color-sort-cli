@@ -19,7 +19,8 @@ def initialize_game(num_stacks=None):
     Generates the initial game state with randomized stacks.
 
     Args:
-        num_stacks (int, optional): Number of stacks to generate. Defaults to a random number between MIN_STACKS and MAX_STACKS.
+        num_stacks (int, optional): Number of stacks to generate.
+        Defaults to a random number between MIN_STACKS and MAX_STACKS.
 
     Returns:
         list of lists: A list of stacks representing the game state.
@@ -58,7 +59,7 @@ def initialize_game(num_stacks=None):
     return stacks
 
 
-def process_move(source, destination):
+def process_move(stack_list, source, destination):
     """
     Moves a letter from the source stack to the destination stack if valid.
 
@@ -70,11 +71,14 @@ def process_move(source, destination):
         bool: True if the move was successful, False otherwise.
     """
     flag = False
+    source_stack = stack_list[source]
+    destination_stack = stack_list[destination]
 
-    if not source or len(destination) == MAX_STACK_SIZE or source == destination:
+    if not source_stack or len(destination_stack) == MAX_STACK_SIZE or source == destination:
         return flag  # Cannot move from an empty stack or to stack of max length or to the same stack
 
-    while (not destination or source[-1] == destination[-1]) and len(destination) != MAX_STACK_SIZE:
+    while ((not destination_stack or source_stack[-1] == destination_stack[-1]) and
+           len(destination_stack) != MAX_STACK_SIZE):
         destination.append(source.pop())
         flag = True
         if not source:
@@ -83,28 +87,40 @@ def process_move(source, destination):
     return flag  # Invalid move if colors don't match
 
 
-def check_solvability(stack_list, max_stack_size):
+def check_solvability(stack_list, previous_move=None):
     """
     Checks if the current game state is solvable by identifying valid moves.
+    Avoids suggesting moves that would create a loop with the previous move.
 
     Args:
-        stack_list (list of lists): The current state of the stacks.
-        max_stack_size (int): The maximum allowed stack size.
-
+        stack_list (list of lists): The current game state.
+        previous_move (tuple, optional): The last move made by the player.
+        Defaults to None.
     Returns:
-        tuple: (source_index, destination_index) for a valid move, or None if no move exists.
+        tuple: A tuple containing the source and destination stack indices for a valid move, or None if no move exists.
     """
     for source_index, source_stack in enumerate(stack_list):
         if not source_stack:
             continue  # Skip empty stacks
 
+        clean_stack_flag = all(x == source_stack[0] for x in source_stack)
+
         for destination_index, destination_stack in enumerate(stack_list):
             if source_index == destination_index:
                 continue  # Skip the same stack
 
-            if (not destination_stack or source_stack[-1] == destination_stack[-1]) and len(destination_stack) < max_stack_size:
-                return source_index, destination_index
+            # Skip moves that would create a loop with the previous move
+            if previous_move and previous_move[0] == destination_index and previous_move[1] == source_index:
+                continue
 
+            # Skip moving from single-color stacks to empty stacks
+            if clean_stack_flag and (not destination_stack or
+                                     (MAX_STACK_SIZE - len(destination_stack)) < len(source_stack)):
+                continue
+
+            if ((not destination_stack or source_stack[-1] == destination_stack[-1]) and
+                    len(destination_stack) < MAX_STACK_SIZE):
+                return source_index, destination_index
     return None  # No valid moves
 
 
@@ -122,13 +138,12 @@ def parse_move(command):
 
 
 def check_win_condition(stack):
-    """Checks if a stack is solved (contains one type of color and is full)."""
-    return len(stack) == MAX_STACK_SIZE and len(set(stack)) == 1
+    """Checks if a stack is solved (contains one type of color)."""
+    return all(x == stack[0] for x in stack)
 
-
-def provide_hint(stacks):
+def provide_hint(stacks, previous_command=None):
     """Generates a hint for the player based on the current stack configuration."""
-    solvable_move = check_solvability(stacks, MAX_STACK_SIZE)
+    solvable_move = check_solvability(stacks, previous_command)
     if solvable_move:
         source, destination = solvable_move
         return f"\n> Hint: Try moving from stack {source + 1} to stack {destination + 1}.\n"
