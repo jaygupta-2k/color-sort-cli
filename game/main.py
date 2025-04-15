@@ -62,15 +62,16 @@ def main():
             elif command == HINT_COMMAND:
                 hint = provide_hint(stack_list, previous_command)
                 print(hint)
+                sleep(1)
             elif command == NEW_COMMAND:
                 new = True
                 stack_list = initialize_game()
                 original_stack_list = [stack.copy() for stack in stack_list]
                 print("\n> New game!\n")
-            elif command == INFO_COMMAND:
+            elif command == INFO_COMMAND or command == HELP_COMMAND:
                 print()
                 how_to_play()
-                sleep(5)
+                sleep(3)
             elif command == COPYRIGHT:
                 show_copyright()
             elif command == WARRANTY:

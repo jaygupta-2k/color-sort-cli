@@ -64,6 +64,7 @@ def process_move(stack_list, source, destination):
     Moves a letter from the source stack to the destination stack if valid.
 
     Args:
+        stack_list: The list of stacks.
         source (list): The source stack.
         destination (list): The destination stack.
 
@@ -79,11 +80,10 @@ def process_move(stack_list, source, destination):
 
     while ((not destination_stack or source_stack[-1] == destination_stack[-1]) and
            len(destination_stack) != MAX_STACK_SIZE):
-        destination.append(source.pop())
+        destination_stack.append(source_stack.pop())
         flag = True
-        if not source:
+        if not source_stack:
             break
-
     return flag  # Invalid move if colors don't match
 
 
@@ -138,8 +138,8 @@ def parse_move(command):
 
 
 def check_win_condition(stack):
-    """Checks if a stack is solved (contains one type of color)."""
-    return all(x == stack[0] for x in stack)
+    """Checks if a stack is solved (each stack contains one type of color and is of max length)."""
+    return all(x == stack[0] for x in stack) and len(stack) == MAX_STACK_SIZE
 
 def provide_hint(stacks, previous_command=None):
     """Generates a hint for the player based on the current stack configuration."""
