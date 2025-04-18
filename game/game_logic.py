@@ -14,7 +14,8 @@ import random
 import re
 from .constants import *
 
-def initialize_game(num_stacks=None):
+
+def initialize_game(num_stacks : int = None) -> list[list]:
     """
     Generates the initial game state with randomized stacks.
 
@@ -59,21 +60,21 @@ def initialize_game(num_stacks=None):
     return stacks
 
 
-def process_move(stack_list, source, destination):
+def process_move(stacks: list[list], source, destination) -> bool:
     """
     Moves a letter from the source stack to the destination stack if valid.
 
     Args:
-        stack_list: The list of stacks.
-        source (list): The source stack.
-        destination (list): The destination stack.
+        stacks: The list of stacks.
+        source (int): The source stack.
+        destination (int): The destination stack.
 
     Returns:
         bool: True if the move was successful, False otherwise.
     """
     flag = False
-    source_stack = stack_list[source]
-    destination_stack = stack_list[destination]
+    source_stack = stacks[source]
+    destination_stack = stacks[destination]
 
     if not source_stack or len(destination_stack) == MAX_STACK_SIZE or source == destination:
         return flag  # Cannot move from an empty stack or to stack of max length or to the same stack
@@ -87,46 +88,9 @@ def process_move(stack_list, source, destination):
     return flag  # Invalid move if colors don't match
 
 
-def check_solvability(stack_list, previous_move=None):
-    """
-    Checks if the current game state is solvable by identifying valid moves.
-    Avoids suggesting moves that would create a loop with the previous move.
-
-    Args:
-        stack_list (list of lists): The current game state.
-        previous_move (tuple, optional): The last move made by the player.
-        Defaults to None.
-    Returns:
-        tuple: A tuple containing the source and destination stack indices for a valid move, or None if no move exists.
-    """
-    for source_index, source_stack in enumerate(stack_list):
-        if not source_stack:
-            continue  # Skip empty stacks
-
-        clean_stack_flag = all(x == source_stack[0] for x in source_stack)
-
-        for destination_index, destination_stack in enumerate(stack_list):
-            if source_index == destination_index:
-                continue  # Skip the same stack
-
-            # Skip moves that would create a loop with the previous move
-            if previous_move and previous_move[0] == destination_index and previous_move[1] == source_index:
-                continue
-
-            # Skip moving from single-color stacks to empty stacks
-            if clean_stack_flag and (not destination_stack or
-                                     (MAX_STACK_SIZE - len(destination_stack)) < len(source_stack)):
-                continue
-
-            if ((not destination_stack or source_stack[-1] == destination_stack[-1]) and
-                    len(destination_stack) < MAX_STACK_SIZE):
-                return source_index, destination_index
-    return None  # No valid moves
-
-
-def parse_move(command):
+def parse_move(command: str) -> tuple[int, int]:
     """Parses the player's move command."""
-    command = list(filter(str.strip, re.split(r'->|[,\-\s]',command)))
+    command = list(filter(str.strip, re.split(r'->|[,\-\s]', command)))
     if len(command) != 2:
         raise ValueError("Invalid move format.")
 
@@ -137,17 +101,92 @@ def parse_move(command):
     return source_index, destination_index
 
 
-def check_win_condition(stack):
+def check_win_condition(stacks: list[list]) -> bool:
     """Checks if a stack is solved (each stack contains one type of color and is of max length)."""
-    return all(x == stack[0] for x in stack) and len(stack) == MAX_STACK_SIZE
+    return all(all(x == stack[0] for x in stack) and len(stack) == MAX_STACK_SIZE for stack in stacks if stack)
 
-def provide_hint(stacks, previous_command=None):
+
+def provide_hint(stacks: list[list]) -> str:
     """Generates a hint for the player based on the current stack configuration."""
-    solvable_move = check_solvability(stacks, previous_command)
-    if solvable_move:
-        source, destination = solvable_move
+    best_moves = best_solve(stacks)
+    if best_moves:
+        source, destination = best_moves[0]
         return f"\n> Hint: Try moving from stack {source + 1} to stack {destination + 1}.\n"
     return "\n> No valid moves. Consider undoing or restarting.\n"
+
+
+def best_solve(initial_stacks: list[list]) -> list[tuple[int, int]] | None:
+    """
+    Finds the best move to solve the game using BFS.
+    Args:
+        initial_stacks: The stack list
+
+    Returns:
+        list: best moves
+    """
+    from copy import deepcopy
+    from collections import deque
+
+    def compress_state(stacks : list[list]) -> tuple:
+        return tuple(tuple(stack) for stack in stacks)
+
+    def get_valid_moves(stacks : list[list], previous_move=None) -> list[tuple[int, int]]:
+        """
+        Checks if the current game state is solvable by identifying valid moves.
+        Avoids suggesting moves that would create a loop with the previous move.
+
+        Args:
+            stacks (list of lists): The current game state.
+            previous_move (tuple, optional): The last move made by the player.
+            Defaults to None.
+        Returns:
+            tuple: A tuple containing the source and destination stack indices for a valid move, or None if no move exists.
+        """
+        moves = []
+        for source_index, source_stack in enumerate(stacks):
+            if not source_stack:
+                continue  # Skip empty stacks
+
+            clean_stack_flag = all(x == source_stack[0] for x in source_stack)
+
+            for destination_index, destination_stack in enumerate(stacks):
+                if source_index == destination_index:
+                    continue  # Skip the same stack
+
+                # Skip moves that would create a loop with the previous move
+                if previous_move and previous_move[0] == destination_index and previous_move[1] == source_index:
+                    continue
+
+                # Skip moving from single-color stacks to empty stacks
+                if clean_stack_flag and (not destination_stack or
+                                         (MAX_STACK_SIZE - len(destination_stack)) < len(source_stack)):
+                    continue
+
+                if ((not destination_stack or source_stack[-1] == destination_stack[-1]) and
+                        len(destination_stack) < MAX_STACK_SIZE):
+                    moves.append((source_index, destination_index))
+        return moves
+
+    visited = set()
+    queue = deque()
+    queue.append((initial_stacks, []))
+
+    while queue:
+        stacks, path = queue.popleft()
+        state_key = compress_state(stacks)
+
+        if state_key in visited:
+            continue
+        visited.add(state_key)
+
+        if check_win_condition(stacks):
+            return path
+
+        for src, dst in get_valid_moves(stacks):
+            new_stacks = deepcopy(stacks)
+            if process_move(new_stacks, src, dst):
+                queue.append((new_stacks, path + [(src, dst)]))
+    return None
 
 
 if __name__ == "__main__":
@@ -159,9 +198,3 @@ if __name__ == "__main__":
     print("Before move:", stacks)
     process_move(stacks[0], stacks[2])
     print("After move:", stacks)
-
-    hint = check_solvability(stacks, 4)
-    if hint:
-        print(f"Hint: Move from stack {hint[0] + 1} to stack {hint[1] + 1}.")
-    else:
-        print("No valid moves available.")

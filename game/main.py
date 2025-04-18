@@ -11,10 +11,11 @@ See the GNU General Public License for more details.
 """
 
 import sys
+from copy import deepcopy
 from time import sleep
-from .display import *
-from .game_logic import *
-from .constants import *
+from game.display import *
+from game.game_logic import *
+from game.constants import *
 
 def main():
     """Main function to run the game."""
@@ -26,22 +27,24 @@ def main():
 
         # Game initialization
         new = True
-        stack_list = initialize_game()
-        original_stack_list = [stack.copy() for stack in stack_list]
-        previous_command = None
+        stacks = initialize_game()
+        original_stacks = deepcopy(stacks)
+        best_solve_count = len(best_solve(stacks))
+        moves = []
 
         while True:
-            show_stacks(stack_list)
-
-            if all(check_win_condition(stack) for stack in stack_list if stack):
+            show_stacks(stacks)
+            if check_win_condition(stacks):
                 print(f"\n> Congratulations, {player_name}! You solved the game.")
+                print(f"\n> Best solve: {best_solve_count}")
+                print(f"> Your solve: {len(moves)}")
                 new = input(f"\n> {prompts(context='repeat')}[Y/n]\n> ")
                 if new not in ['Y', '']:
                     break
                 else:
                     new = True
-                    stack_list = initialize_game()
-                    original_stack_list = [stack.copy() for stack in stack_list]
+                    stacks = initialize_game()
+                    original_stacks = deepcopy(stacks)
                     print("\n> New game!\n")
                     continue
 
@@ -56,17 +59,17 @@ def main():
             if command == QUIT_COMMAND:
                 break
             elif command == RESET_COMMAND:
-                stack_list = [stack.copy() for stack in original_stack_list]
+                stacks = deepcopy(original_stacks)
                 print("\n> Game reset!")
                 print(f"> {prompts(context='restart')}\n")
             elif command == HINT_COMMAND:
-                hint = provide_hint(stack_list, previous_command)
+                hint = provide_hint(stacks, moves[-1])
                 print(hint)
                 sleep(1)
             elif command == NEW_COMMAND:
                 new = True
-                stack_list = initialize_game()
-                original_stack_list = [stack.copy() for stack in stack_list]
+                stacks = initialize_game()
+                original_stacks = deepcopy(stacks)
                 print("\n> New game!\n")
             elif command == INFO_COMMAND or command == HELP_COMMAND:
                 print()
@@ -79,8 +82,8 @@ def main():
             else:
                 try:
                     source, destination = parse_move(command)
-                    previous_command = (source, destination)
-                    if process_move(stack_list, source, destination):
+                    moves.append((source, destination))
+                    if process_move(stacks, source, destination):
                         print(f"\n> Moved from stack {source + 1} to stack {destination + 1}.\n")
                     else:
                         print(f"\n> Invalid move. Please try again.\n> {prompts(context='error')}\n")
