@@ -209,7 +209,3 @@ if __name__ == "__main__":
     stacks = initialize_game()
     for i, stack in enumerate(stacks):
         print(f"Stack {i + 1}: {stack}")
-
-    print("Before move:", stacks)
-    process_move(stacks[0], stacks[2])
-    print("After move:", stacks)
