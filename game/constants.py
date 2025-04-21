@@ -14,12 +14,12 @@ from colorama import Back
 
 # Constants for the game
 MAX_STACK_SIZE = 4
-QUIT_COMMAND = "Q"
-RESET_COMMAND = "R"
-HINT_COMMAND = "H"
-NEW_COMMAND = "N"
-INFO_COMMAND = "I"
-HELP_COMMAND = "HELP"
+QUIT_COMMAND = ["Q", "QUIT", "EXIT"]
+RESET_COMMAND = ["R", "RESET"]
+HINT_COMMAND = ["H", "HINT"]
+NEW_COMMAND = ["N", "NEW"]
+INFO_COMMAND = ["I", "HELP"]
+UNDO_COMMAND = ["U", "UNDO"]
 COPYRIGHT = "SHOW C"
 WARRANTY = "SHOW W"
 

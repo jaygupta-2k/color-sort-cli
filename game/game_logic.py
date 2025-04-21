@@ -12,7 +12,9 @@ See the GNU General Public License for more details.
 
 import random
 import re
-from .constants import *
+from copy import deepcopy
+
+from game.constants import *
 
 
 def initialize_game(num_stacks : int = None) -> list[list]:
@@ -60,7 +62,7 @@ def initialize_game(num_stacks : int = None) -> list[list]:
     return stacks
 
 
-def process_move(stacks: list[list], source, destination) -> bool:
+def process_move(stacks: list[list], source, destination, previous_state = []) -> tuple:
     """
     Moves a letter from the source stack to the destination stack if valid.
 
@@ -77,7 +79,9 @@ def process_move(stacks: list[list], source, destination) -> bool:
     destination_stack = stacks[destination]
 
     if not source_stack or len(destination_stack) == MAX_STACK_SIZE or source == destination:
-        return flag  # Cannot move from an empty stack or to stack of max length or to the same stack
+        return flag, previous_state  # Cannot move from an empty stack or to stack of max length or to the same stack
+
+    initial_state = deepcopy(stacks)
 
     while ((not destination_stack or source_stack[-1] == destination_stack[-1]) and
            len(destination_stack) != MAX_STACK_SIZE):
@@ -85,7 +89,11 @@ def process_move(stacks: list[list], source, destination) -> bool:
         flag = True
         if not source_stack:
             break
-    return flag  # Invalid move if colors don't match
+
+    if flag:
+        previous_state = initial_state
+
+    return flag, previous_state  # Invalid move if colors don't match
 
 
 def parse_move(command: str) -> tuple[int, int]:
@@ -184,9 +192,16 @@ def best_solve(initial_stacks: list[list]) -> list[tuple[int, int]] | None:
 
         for src, dst in get_valid_moves(stacks):
             new_stacks = deepcopy(stacks)
-            if process_move(new_stacks, src, dst):
+            if process_move(new_stacks, src, dst)[0]:
                 queue.append((new_stacks, path + [(src, dst)]))
     return None
+
+def rate_solution(user_moves, optimal_moves):
+    if user_moves <= optimal_moves:
+        return 5
+    ratio = optimal_moves / user_moves
+    stars = 5 * ratio
+    return int(max(1.0, round(stars, 1)))  # Ensure at least 1 star
 
 
 if __name__ == "__main__":

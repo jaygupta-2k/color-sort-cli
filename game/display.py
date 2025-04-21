@@ -14,15 +14,15 @@ import os
 import random
 
 from tabulate import tabulate
-from colorama import Style, Fore, Back
-from .constants import MAX_STACK_SIZE, icon
+from colorama import Fore
+from game.constants import MAX_STACK_SIZE, icon
 
 def welcome():
     """
     Displays the welcome message for the game.
     """
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(Fore.WHITE+icon+Fore.WHITE)
+    print(Fore.LIGHTYELLOW_EX+icon+Fore.WHITE)
     print("Welcome to the Color Sort Game!\n")
     how_to_play()
     player_name = input("> Enter your name\n> ")
@@ -43,10 +43,12 @@ colors on top or to an empty stack.\n""")
     print("You can enter your move in one of these formats")
     print("  1-2 or 1,2 or 1 2 or 1->2\n")
     print("Or you can enter a command")
-    print("  H: Get a hint.")
-    print("  I: To display this message.")
-    print("  R: Reset the game.")
-    print("  Q: Quit the game.\n")
+    print("  H, hint    : Get a hint.")
+    print("  I, help    : Display this message.")
+    print("  U, undo    : Undo last move.")
+    print("  R, reset   : Reset the game.")
+    print("  N, new     : Start a new game.")
+    print("  Q, quit    : Quit the game.\n")
 
 
 def show_stacks(stacks):
@@ -73,7 +75,7 @@ def show_stacks(stacks):
     print(tabulate(table, tablefmt="rounded_outline", stralign="center", numalign="center"))
 
 
-def prompts(context="error"):
+def prompts(context="error") -> str:
     """
     Returns a random prompt from a predefined list based on the context.
 

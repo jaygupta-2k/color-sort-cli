@@ -11,26 +11,28 @@ See the GNU General Public License for more details.
 """
 
 import sys
-from copy import deepcopy
 from time import sleep
 from game.display import *
 from game.game_logic import *
 from game.constants import *
 
+
 def main():
     """Main function to run the game."""
+    from copy import deepcopy
+
+    def initialize():
+        stacks = initialize_game()
+
+        return stacks, deepcopy(stacks), deepcopy(stacks), len(best_solve(stacks)), [], True
+
     try:
         # Enable alternate screen buffer
         sys.stdout.write(ALT_SCREEN_ON)
         sys.stdout.flush()
         player_name=welcome()
 
-        # Game initialization
-        new = True
-        stacks = initialize_game()
-        original_stacks = deepcopy(stacks)
-        best_solve_count = len(best_solve(stacks))
-        moves = []
+        stacks, original_stacks, previous_state, best_solve_count, moves, new = initialize()
 
         while True:
             show_stacks(stacks)
@@ -38,13 +40,12 @@ def main():
                 print(f"\n> Congratulations, {player_name}! You solved the game.")
                 print(f"\n> Best solve: {best_solve_count}")
                 print(f"> Your solve: {len(moves)}")
-                new = input(f"\n> {prompts(context='repeat')}[Y/n]\n> ")
+                print('\n',Fore.YELLOW+(rate_solution(len(moves),best_solve_count) * '⭐')+Fore.WHITE)
+                new = input(f"\n> {prompts(context='repeat')}[Y/n]\n> ").strip().upper()
                 if new not in ['Y', '']:
                     break
                 else:
-                    new = True
-                    stacks = initialize_game()
-                    original_stacks = deepcopy(stacks)
+                    stacks, original_stacks, previous_state, best_solve_count, moves, new = initialize()
                     print("\n> New game!\n")
                     continue
 
@@ -56,25 +57,28 @@ def main():
 
             command = input("> Enter your move or a command\n> ").strip().upper()
 
-            if command == QUIT_COMMAND:
+            if command in QUIT_COMMAND:
                 break
-            elif command == RESET_COMMAND:
+            elif command in RESET_COMMAND:
                 stacks = deepcopy(original_stacks)
                 print("\n> Game reset!")
                 print(f"> {prompts(context='restart')}\n")
-            elif command == HINT_COMMAND:
-                hint = provide_hint(stacks, moves[-1])
+            elif command in HINT_COMMAND:
+                hint = provide_hint(stacks)
                 print(hint)
                 sleep(1)
-            elif command == NEW_COMMAND:
-                new = True
-                stacks = initialize_game()
-                original_stacks = deepcopy(stacks)
+            elif command in NEW_COMMAND:
+                stacks, original_stacks, previous_state, best_solve_count, moves, new = initialize()
                 print("\n> New game!\n")
-            elif command == INFO_COMMAND or command == HELP_COMMAND:
+            elif command in INFO_COMMAND:
                 print()
                 how_to_play()
                 sleep(3)
+            elif command in UNDO_COMMAND:
+                print()
+                if moves:
+                    moves.pop()
+                    stacks = deepcopy(previous_state)
             elif command == COPYRIGHT:
                 show_copyright()
             elif command == WARRANTY:
@@ -82,8 +86,9 @@ def main():
             else:
                 try:
                     source, destination = parse_move(command)
-                    moves.append((source, destination))
-                    if process_move(stacks, source, destination):
+                    processed, previous_state = process_move(stacks, source, destination, previous_state)
+                    if processed:
+                        moves.append((source, destination))
                         print(f"\n> Moved from stack {source + 1} to stack {destination + 1}.\n")
                     else:
                         print(f"\n> Invalid move. Please try again.\n> {prompts(context='error')}\n")
