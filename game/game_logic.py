@@ -125,62 +125,55 @@ def provide_hint(stacks: list[list]) -> str:
 
 def best_solve(initial_stacks: list[list]) -> list[tuple[int, int]] | None:
     """
-    Finds the best move to solve the game using BFS.
+    Finds the best move sequence to solve the game using heuristic-based A* search.
     Args:
-        initial_stacks: The stack list
-
+        initial_stacks: The initial game stacks
     Returns:
-        list: best moves
+        list: best moves, or None if unsolvable
     """
     from copy import deepcopy
-    from collections import deque
+    from heapq import heappush, heappop
 
-    def compress_state(stacks : list[list]) -> tuple:
+    def compress_state(stacks: list[list]) -> tuple:
         return tuple(tuple(stack) for stack in stacks)
 
-    def get_valid_moves(stacks : list[list], previous_move=None) -> list[tuple[int, int]]:
-        """
-        Checks if the current game state is solvable by identifying valid moves.
-        Avoids suggesting moves that would create a loop with the previous move.
+    def heuristic_score(stacks: list[list]) -> int:
+        score = 0
+        for stack in stacks:
+            if not stack:
+                continue
+            if len(set(stack)) > 1:
+                score += len(set(stack))  # More mixed colors, worse
+            if len(stack) < MAX_STACK_SIZE:
+                score += 1  # Penalize incomplete tubes
+        return score
 
-        Args:
-            stacks (list of lists): The current game state.
-            previous_move (tuple, optional): The last move made by the player.
-            Defaults to None.
-        Returns:
-            tuple: A tuple containing the source and destination stack indices for a valid move, or None if no move exists.
-        """
+    def get_valid_moves(stacks: list[list], previous_move=None) -> list[tuple[int, int]]:
         moves = []
         for source_index, source_stack in enumerate(stacks):
             if not source_stack:
-                continue  # Skip empty stacks
-
+                continue
             clean_stack_flag = all(x == source_stack[0] for x in source_stack)
-
             for destination_index, destination_stack in enumerate(stacks):
                 if source_index == destination_index:
-                    continue  # Skip the same stack
-
-                # Skip moves that would create a loop with the previous move
+                    continue
                 if previous_move and previous_move[0] == destination_index and previous_move[1] == source_index:
                     continue
-
-                # Skip moving from single-color stacks to empty stacks
                 if clean_stack_flag and (not destination_stack or
                                          (MAX_STACK_SIZE - len(destination_stack)) < len(source_stack)):
                     continue
-
                 if ((not destination_stack or source_stack[-1] == destination_stack[-1]) and
                         len(destination_stack) < MAX_STACK_SIZE):
                     moves.append((source_index, destination_index))
         return moves
 
     visited = set()
-    queue = deque()
-    queue.append((initial_stacks, []))
+    heap = []
+    initial_score = heuristic_score(initial_stacks)
+    heappush(heap, (initial_score, 0, initial_stacks, []))
 
-    while queue:
-        stacks, path = queue.popleft()
+    while heap:
+        score, depth, stacks, path = heappop(heap)
         state_key = compress_state(stacks)
 
         if state_key in visited:
@@ -190,10 +183,14 @@ def best_solve(initial_stacks: list[list]) -> list[tuple[int, int]] | None:
         if check_win_condition(stacks):
             return path
 
-        for src, dst in get_valid_moves(stacks):
+        for move in get_valid_moves(stacks, path[-1] if path else None):
+            src, dst = move
             new_stacks = deepcopy(stacks)
-            if process_move(new_stacks, src, dst)[0]:
-                queue.append((new_stacks, path + [(src, dst)]))
+            success, _ = process_move(new_stacks, src, dst)
+            if success:
+                new_score = heuristic_score(new_stacks)
+                heappush(heap, (new_score + depth + 1, depth + 1, new_stacks, path + [move]))
+
     return None
 
 def rate_solution(user_moves, optimal_moves):
