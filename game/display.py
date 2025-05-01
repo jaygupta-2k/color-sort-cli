@@ -36,10 +36,10 @@ def how_to_play():
     """
     print("How to play?")
     print("The goal is to sort colors into uniform stacks.")
-    print(f"Each stack can contain a maximum of {MAX_STACK_SIZE} letters.")
+    print(f"Each stack can contain a maximum of {MAX_STACK_SIZE} colors.")
     print("You can only move the top colors of a stack.")
-    print("""The letter can be moved to a stack with the same 
-colors on top or to an empty stack.\n""")
+    print("""The colors can be moved to a stack with the same 
+color on top or to an empty stack.\n""")
     print("You can enter your move in one of these formats")
     print("  1-2 or 1,2 or 1 2 or 1->2\n")
     print("Or you can enter a command")

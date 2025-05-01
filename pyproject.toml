@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "color-sort-game"
-version = "1.0.7"
+version = "1.0.8"
 description = "A CLI-based color sorting game."
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [
