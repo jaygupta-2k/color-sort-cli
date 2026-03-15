@@ -19,7 +19,8 @@ classifiers = [
 ]
 dependencies = [
     "tabulate",
-    "colorama"
+    "colorama",
+    "flask"
 ]
 
 [project.urls]

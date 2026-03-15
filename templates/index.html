@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ColorSort Web</title>
+    <style>
+      /* Normalize box-sizing and prevent horizontal overflow */
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        display: flex;
+        min-height: 100vh;
+        flex-direction: column;
+        align-items: center;
+        background-color: #101020;
+        color: #f0f0f0;
+        padding: 0 1rem;
+      }
+
+      header {
+        width: 100%;
+        padding: 1rem 1rem 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      main {
+        width: min(900px, 100%);
+        padding: 1.5rem 0.5rem;
+        flex: 1;
+      }
+
+      .controls {
+        margin: 1rem 0;
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        color: #f0f0f0;
+        padding: 0.4rem 0.8rem;
+        border-radius: 0.35rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      button:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+
+      .stack {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        background: rgba(0, 0, 0, 0.25);
+        cursor: pointer;
+      }
+
+      .stack.selected {
+        border-color: rgba(255, 235, 59, 0.8);
+        box-shadow: 0 0 0 3px rgba(255, 235, 59, 0.25);
+      }
+
+      .tube {
+        height: 36px;
+        border-radius: 0.4rem;
+        margin: 0.18rem 0;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+
+      .empty {
+        background: rgba(255, 255, 255, 0.06);
+        border-style: dashed;
+      }
+
+      .status {
+        font-size: 0.95rem;
+        margin-top: 0.75rem;
+      }
+
+      .hint {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 999;
+      }
+
+      .modal:not([hidden]) {
+        display: flex;
+      }
+
+      .modalContent {
+        background: rgba(20, 20, 30, 0.95);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        max-width: 320px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
+      }
+
+      .modalContent h2 {
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+      }
+
+      #winDetails {
+        text-align: center;
+        margin: 0;
+        line-height: 1.4;
+      }
+
+      .modalContent button {
+        margin-top: 1rem;
+        width: 100%;
+      }
+
+      .footer {
+        font-size: 0.8rem;
+        padding: 0.5rem 0;
+        margin-top: 1rem;
+        width: 100%;
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 1rem 0.75rem;
+        }
+
+        .board {
+          grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+          gap: 0.5rem;
+        }
+
+        .stack {
+          min-height: 180px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>ColorSort (Web)</h1>
+      <div>
+        <button id="resetBtn">Reset</button>
+        <button id="hintBtn">Hint</button>
+      </div>
+    </header>
+
+    <main>
+      <p class="status" id="status">Loading...</p>
+
+      <div class="board" id="board"></div>
+
+      <p class="status" style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.9;">
+        Tap one stack, then tap another to move the top color.
+      </p>
+
+      <div class="hint" id="hint" hidden></div>
+    </main>
+
+    <footer class="footer">
+      Uses the same solver/hint engine as the CLI game. Refresh to restart.
+    </footer>
+
+    <!-- Win modal (shown on solve) -->
+    <div class="modal" id="winModal" hidden>
+      <div class="modalContent">
+        <h2>🎉 You solved it!</h2>
+        <p id="winDetails"></p>
+        <button id="newGameBtn">New game</button>
+      </div>
+    </div>
+
+    <script>
+      const board = document.getElementById("board");
+      const statusEl = document.getElementById("status");
+      const hintEl = document.getElementById("hint");
+      const resetBtn = document.getElementById("resetBtn");
+      const hintBtn = document.getElementById("hintBtn");
+
+      let selectedStack = null;
+      let lastWonState = false;
+
+      async function api(path, opts = {}) {
+        const res = await fetch(path, opts);
+        if (!res.ok) {
+          throw new Error("Request failed");
+        }
+        return res.json();
+      }
+
+      function clearSelection() {
+        selectedStack = null;
+        document.querySelectorAll(".stack.selected").forEach((el) => el.classList.remove("selected"));
+      }
+
+      function selectStack(index) {
+        if (selectedStack === index) {
+          clearSelection();
+          return;
+        }
+
+        if (selectedStack === null) {
+          selectedStack = index;
+          document.querySelectorAll(".stack")[index].classList.add("selected");
+          statusEl.textContent = `Selected stack ${index + 1}. Now click a destination.`;
+          return;
+        }
+
+        // Move from selectedStack to the clicked stack
+        makeMove(selectedStack, index);
+        clearSelection();
+      }
+
+      function render(state) {
+        const {
+          stacks = [],
+          won = false,
+          moves = [],
+          bestSolve = null,
+          rating = null,
+        } = state || {};
+        board.innerHTML = "";
+        const maxHeight = Math.max(...(stacks || []).map((s) => s.length));
+
+        const modal = document.getElementById("winModal");
+        const winDetails = document.getElementById("winDetails");
+
+        const bestText = bestSolve == null ? "—" : bestSolve;
+        const clampedRating = Number.isFinite(rating) ? Math.max(1, Math.min(5, rating)) : null;
+        const starText = clampedRating == null ? "—" : "★".repeat(clampedRating) + "☆".repeat(5 - clampedRating);
+
+        if (won && !lastWonState) {
+          winDetails.innerHTML = `
+            <div>Your Moves: ${moves.length}</div>
+            <div>Best Moves: ${bestText}</div>
+            <div>${starText}</div>
+          `;
+          modal.hidden = false;
+        } else if (!won) {
+          modal.hidden = true;
+        }
+        lastWonState = won;
+
+        for (let i = 0; i < stacks.length; i++) {
+          const stack = stacks[i];
+          const stackEl = document.createElement("div");
+          stackEl.className = "stack";
+          stackEl.dataset.index = i;
+          stackEl.addEventListener("click", () => selectStack(i));
+
+          for (let row = 0; row < maxHeight; row++) {
+            const tile = document.createElement("div");
+            tile.className = "tube";
+
+            const fromBottom = maxHeight - 1 - row;
+            if (fromBottom < stack.length) {
+              // Render colors from bottom (stack[0]) to top (stack[last])
+              tile.style.background = stack[fromBottom];
+            } else {
+              tile.classList.add("empty");
+            }
+
+            stackEl.appendChild(tile);
+          }
+
+          const label = document.createElement("div");
+          label.style.textAlign = "center";
+          label.style.fontSize = "0.75rem";
+          label.style.marginTop = "0.35rem";
+          label.textContent = i + 1;
+          stackEl.appendChild(label);
+
+          board.appendChild(stackEl);
+        }
+
+        // Show move count, best solve estimate, and rating in the status bar.
+        statusEl.textContent = `Your moves: ${moves.length}`;
+        statusEl.style.color = "#f0f0f0";
+        hintBtn.disabled = won;
+      }
+
+      async function refresh() {
+        try {
+          const state = await api("/api/state");
+          render(state);
+          hintEl.hidden = true;
+          clearSelection();
+        } catch (err) {
+          statusEl.textContent = "Unable to load game state.";
+        }
+      }
+
+      async function makeMove(srcIndex, dstIndex) {
+        const src = typeof srcIndex === "number" ? srcIndex : null;
+        const dst = typeof dstIndex === "number" ? dstIndex : null;
+        if (src === null || dst === null) {
+          statusEl.textContent = "Tap a stack then another stack to move.";
+          return;
+        }
+
+        try {
+          await api("/api/move", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ source: src, destination: dst }),
+          });
+          await refresh();
+        } catch (err) {
+          statusEl.textContent = "Invalid move, try again.";
+        }
+      }
+
+      async function showHint() {
+        try {
+          const result = await api("/api/hint");
+          hintEl.hidden = false;
+          hintEl.textContent = result.hint;
+        } catch {
+          hintEl.hidden = true;
+        }
+      }
+
+      resetBtn.addEventListener("click", async () => {
+        await api("/api/reset", { method: "POST" });
+        await refresh();
+        clearSelection();
+      });
+      hintBtn.addEventListener("click", showHint);
+
+      document.getElementById("newGameBtn").addEventListener("click", async () => {
+        await api("/api/reset", { method: "POST" });
+        await refresh();
+        clearSelection();
+      });
+
+      refresh();
+    </script>
+  </body>
+</html>

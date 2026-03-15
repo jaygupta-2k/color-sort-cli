@@ -38,6 +38,22 @@ Recreating the classic color sort game in Python.
    ```
    color-sort
    ```
+
+## Web UI (Development)
+If you want to run the game in your browser instead of the terminal:
+
+1. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+2. Run the web server:
+   ```
+   python webapp.py
+   ```
+3. Open http://localhost:5000 in your browser.
+
+The browser UI resets the game when you refresh the page, and you can move colors by clicking one stack (source) then another (destination).
+
 ## To-do
 - [X] Write an algorithm to solve the game.
 - [X] Improve hints function logic.
