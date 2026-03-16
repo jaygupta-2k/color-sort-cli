@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ColorSort Web</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
       /* Normalize box-sizing and prevent horizontal overflow */
       *, *::before, *::after {
@@ -63,6 +64,12 @@
         border-radius: 0.35rem;
         cursor: pointer;
         font-weight: 600;
+      }
+
+      #helpBtn {
+        background: transparent;
+        border: none;
+        padding: 0.4rem;
       }
 
       button:hover {
@@ -195,8 +202,12 @@
     <header>
       <h1>ColorSort (Web)</h1>
       <div>
+        <button id="helpBtn" title="How to play" class="fa fa-info-circle" aria-label="Help"></button>
         <button id="resetBtn">Reset</button>
         <button id="hintBtn">Hint</button>
+        <a href="https://github.com/jaygupta-2k/color-sort-cli" target="_blank" rel="noopener noreferrer">
+          <button id="githubBtn">GitHub</button>
+        </a>
       </div>
     </header>
 
@@ -215,6 +226,22 @@
     <footer class="footer">
       Uses the same solver/hint engine as the CLI game. Refresh to restart.
     </footer>
+
+    <!-- Help modal -->
+    <div class="modal" id="helpModal" hidden>
+      <div class="modalContent">
+        <h2>How to play</h2>
+        <p style="text-align: left;">
+          Tap one stack, then tap another to move the top color. The goal is to sort each stack by color and fill them completely.
+        </p>
+        <ul style="text-align: left; padding-left: 1.1rem;">
+          <li>Only same-color tops can be moved (or onto an empty stack).</li>
+          <li>Each stack holds up to 4 colors.</li>
+          <li>Use the Hint button for a suggested move.</li>
+        </ul>
+        <button id="closeHelpBtn">Got it</button>
+      </div>
+    </div>
 
     <!-- Win modal (shown on solve) -->
     <div class="modal" id="winModal" hidden>
@@ -386,6 +413,13 @@
         await api("/api/reset", { method: "POST" });
         await refresh();
         clearSelection();
+      });
+
+      document.getElementById("helpBtn").addEventListener("click", () => {
+        document.getElementById("helpModal").hidden = false;
+      });
+      document.getElementById("closeHelpBtn").addEventListener("click", () => {
+        document.getElementById("helpModal").hidden = true;
       });
 
       refresh();
